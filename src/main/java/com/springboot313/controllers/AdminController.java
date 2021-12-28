@@ -2,9 +2,10 @@ package com.springboot313.controllers;
 
 
 import com.springboot313.entities.User;
-import com.springboot313.service.UserService;
+import com.springboot313.service.UserServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,26 +15,32 @@ import java.util.NoSuchElementException;
 @RequestMapping("/rest/admin")
 public class AdminController {
 
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
 
-    public AdminController(UserService userService) {
-        this.userService = userService;
+    public AdminController(UserServiceImpl userServiceImpl) {
+        this.userServiceImpl = userServiceImpl;
     }
 
     @GetMapping("users")
     public List<User> getAllUsers() {
-        return userService.getList();
+        return userServiceImpl.getList();
     }
 
     @PostMapping("/users")
     public void addNewUser(@RequestBody User user) {
-        userService.save(user);
+        userServiceImpl.save(user);
     }
 
     @PutMapping("/users/{id}")
     public ResponseEntity<?> updateUser(@RequestBody User user) {
+        if (user.getPassword() != null && !user.getPassword().equals("")) {
+            user.setPassword(bCrypt(user.getPassword()));
+        } else {
+            user.setPassword(user.getPassword());
+        }
+        userServiceImpl.loadUserByUsername("user");
         try {
-            userService.save(user);
+            userServiceImpl.save(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (NoSuchElementException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -42,16 +49,20 @@ public class AdminController {
 
     @DeleteMapping("/users/{id}")
     public void deleteUser(@PathVariable Long id) {
-        userService.remove(id);
+        userServiceImpl.remove(id);
     }
 
     @GetMapping("/users/{id}")
     public ResponseEntity<?> getUserInfo(@PathVariable Long id) {
         try {
-            User user = userService.getById(id);
+            User user = userServiceImpl.getById(id);
             return new ResponseEntity<>(user, HttpStatus.OK);
         } catch (NoSuchElementException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
+    private String bCrypt(String hash) {
+        BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
+        return crypt.encode(hash);
     }
 }
