@@ -28,6 +28,11 @@ public class AdminController {
 
     @PostMapping("/users")
     public void addNewUser(@RequestBody User user) {
+        if (user.getPassword() != null && !user.getPassword().equals("")) {
+            user.setPassword(bCrypt(user.getPassword()));
+        } else {
+            user.setPassword(user.getPassword());
+        }
         userServiceImpl.save(user);
     }
 
